@@ -286,7 +286,8 @@ public class MyBot extends TelegramLongPollingBot {
                 logger.severe(e.getMessage());
             }
 
-            sendText(adminId, "📤 Endi shartnoma faylini yuboring (PDF yoki Word):\n" +  "👤 User ID: `" + targetUserId + "`");
+            sendText(adminId,   "👤 User ID: `" + targetUserId + "`\n"+
+                    "📤 Endi shartnoma faylini yuboring (PDF yoki Word):" );
         }
     }
 
