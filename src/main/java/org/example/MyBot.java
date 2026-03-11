@@ -25,7 +25,7 @@ public class MyBot extends TelegramLongPollingBot {
     private final String BOT_USERNAME;
 
     // ← O'z admin chat ID ingizni kiriting
-    private static final long ADMIN_CHAT_ID = 8187750931L;
+    private  final Long ADMIN_CHAT_ID;
 
     // Foydalanuvchilar holati
     private final Map<Long, UserData> userDataMap = new HashMap<>();
@@ -34,9 +34,10 @@ public class MyBot extends TelegramLongPollingBot {
     private final Map<Long, AdminState> adminStateMap = new HashMap<>();
     private final Map<Long, Long> pendingTargetUser = new HashMap<>();
 
-    public MyBot(String botToken, String botUsername) {
+    public MyBot(String botToken, String botUsername, Long botAdmin) {
         this.BOT_TOKEN = botToken;
         this.BOT_USERNAME = botUsername;
+        this.ADMIN_CHAT_ID = botAdmin;
     }
 
     @Override
