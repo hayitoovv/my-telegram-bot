@@ -4,29 +4,19 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
-/**
- * Dastur kirish nuqtasi
- * Ishga tushirish uchun:
- *   java -jar telegram-bot.jar <BOT_TOKEN> <BOT_USERNAME>
- * yoki
- *   environment variable orqali: BOT_TOKEN, BOT_USERNAME
- */
 public class Main {
 
     public static void main(String[] args) {
-
-        // 1. Token va username olish (environment variable yoki argument)
-        String botToken    = "8244475879:AAFwsIyRJzYhztoBvIUMGoiEgBjB_JP5Zus";
-        String botUsername ="Zarmed_shartnoma_bot";
+//        String botToken    = getEnvOrArg(args, 0, "BOT_TOKEN");
+//        String botUsername = getEnvOrArg(args, 1, "BOT_USERNAME");
+        String botToken    = "8629017795:AAGnqYOEU9EDy_dmkjRrYVwqHbwtNH7lZNk";
+        String botUsername = "nimadirqandaydir_bot";
 
         if (botToken == null || botToken.isEmpty()) {
             System.err.println("❌ BOT_TOKEN topilmadi!");
-            System.err.println("Ishlatish: java -jar telegram-bot.jar <TOKEN> <USERNAME>");
-            System.err.println("yoki: export BOT_TOKEN=... && export BOT_USERNAME=...");
             System.exit(1);
         }
 
-        // 2. Botni ro'yxatdan o'tkazish va ishga tushirish
         try {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(new MyBot(botToken, botUsername));
@@ -37,9 +27,6 @@ public class Main {
         }
     }
 
-    /**
-     * Avval environment variable-dan, keyin argument-dan o'qiydi
-     */
     private static String getEnvOrArg(String[] args, int index, String envKey) {
         String envVal = System.getenv(envKey);
         if (envVal != null && !envVal.isEmpty()) return envVal;
