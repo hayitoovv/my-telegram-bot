@@ -7,8 +7,11 @@ import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.ArrayList;
@@ -25,7 +28,7 @@ public class MyBot extends TelegramLongPollingBot {
     private final String BOT_USERNAME;
 
     // ← O'z admin chat ID ingizni kiriting
-    private  final Long ADMIN_CHAT_ID;
+    private  final Long ADMIN_CHAT_ID;;
 
     // Foydalanuvchilar holati
     private final Map<Long, UserData> userDataMap = new HashMap<>();
@@ -81,6 +84,9 @@ public class MyBot extends TelegramLongPollingBot {
 
             // Holat bo'yicha qayta ishlash
             switch (userData.getState()) {
+                case WAITING_PHONE:
+                    handlePhone(chatId, message, userData);
+                    break;
                 case WAITING_PASSPORT:
                     handlePassport(chatId, message, userData);
                     break;
@@ -107,15 +113,76 @@ public class MyBot extends TelegramLongPollingBot {
     }
 
     // =====================================================================
-    //  /start
+    //  /start — salomlashish va telefon so'rash
     // =====================================================================
     private void handleStart(long chatId, String firstName, UserData userData) {
+        userData.setState(UserState.WAITING_PHONE);
+
+        // "Telefon raqamni ulashish" tugmasi
+        KeyboardButton phoneButton = new KeyboardButton();
+        phoneButton.setText("📱 Telefon raqamni ulashish");
+        phoneButton.setRequestContact(true);
+
+        KeyboardRow row = new KeyboardRow();
+        row.add(phoneButton);
+
+        ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
+        keyboard.setKeyboard(List.of(row));
+        keyboard.setResizeKeyboard(true);
+        keyboard.setOneTimeKeyboard(true);
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId);
+        msg.setText("👋 Salom, " + firstName + "!\n\n"
+                + "Ro'yxatdan o'tish uchun bir necha ma'lumot kerak.\n\n"
+                + "📱 *1-qadam:* Telefon raqamingizni ulashing:");
+        msg.setParseMode("Markdown");
+        msg.setReplyMarkup(keyboard);
+
+        try {
+            execute(msg);
+        } catch (TelegramApiException e) {
+            logger.severe("Xabar yuborishda xato: " + e.getMessage());
+        }
+    }
+
+    // =====================================================================
+    //  Telefon raqam
+    // =====================================================================
+    private void handlePhone(long chatId, Message message, UserData userData) {
+
+        String phone = null;
+
+        // Contact tugmasi orqali yuborildi
+        if (message.hasContact()) {
+            phone = message.getContact().getPhoneNumber();
+            // + belgisi yo'q bo'lsa qo'shamiz
+            if (!phone.startsWith("+")) {
+                phone = "+" + phone;
+            }
+        }
+        // Matn orqali yozildi
+        else if (message.hasText()) {
+            String text = message.getText().trim();
+            if (text.matches("\\+?\\d{9,13}")) {
+                phone = text.startsWith("+") ? text : "+" + text;
+            } else {
+                sendText(chatId, "⚠️ Noto'g'ri format! Iltimos tugmani bosing yoki raqamni to'g'ri kiriting.\n_(Masalan: +998901234567)_");
+                return;
+            }
+        } else {
+            sendText(chatId, "⚠️ Iltimos, telefon raqamingizni ulashing.");
+            return;
+        }
+
+        userData.setPhone(phone);
         userData.setState(UserState.WAITING_PASSPORT);
+
         sendMarkdownText(chatId,
-                "👋 Salom, " + firstName + "!\n\n"
-                        + "Ro'yxatdan o'tish uchun bir necha ma'lumot kerak.\n\n"
-                        + "📄 *1-qadam:* Pasport seriya va raqamingizni kiriting.\n"
-                        + "_(Masalan: AA1234567)_", null);
+                "✅ Telefon raqam qabul qilindi: *" + phone + "*\n\n"
+                        + "📄 *2-qadam:* Pasport seriya va raqamingizni kiriting.\n"
+                        + "_(Masalan: AA1234567)_",
+                removeKeyboard());
     }
 
     // =====================================================================
@@ -138,9 +205,10 @@ public class MyBot extends TelegramLongPollingBot {
 
         userData.setPassportSeriya(passport);
         userData.setState(UserState.WAITING_JSHSHR);
+
         sendMarkdownText(chatId,
                 "✅ Pasport seriya qabul qilindi: *" + passport + "*\n\n"
-                        + "🔢 *2-qadam:* JSHSHR ni kiriting.\n"
+                        + "🔢 *3-qadam:* JSHSHR ni kiriting.\n"
                         + "_(14 ta raqam, masalan: 12345678901234)_", null);
     }
 
@@ -164,9 +232,10 @@ public class MyBot extends TelegramLongPollingBot {
 
         userData.setJshshr(jshshr);
         userData.setState(UserState.WAITING_PHOTO_FRONT);
+
         sendMarkdownText(chatId,
                 "✅ JSHSHR qabul qilindi.\n\n"
-                        + "📸 *3-qadam:* Pasportning *OLDI* tomonini yuboring.", null);
+                        + "📸 *4-qadam:* Pasportning *OLDI* tomonini yuboring.", null);
     }
 
     // =====================================================================
@@ -185,7 +254,7 @@ public class MyBot extends TelegramLongPollingBot {
 
         sendMarkdownText(chatId,
                 "✅ Oldi tomoni qabul qilindi!\n\n"
-                        + "📸 *4-qadam:* Pasportning *ORQA* tomonini yuboring.", null);
+                        + "📸 *5-qadam:* Pasportning *ORQA* tomonini yuboring.", null);
     }
 
     // =====================================================================
@@ -205,6 +274,7 @@ public class MyBot extends TelegramLongPollingBot {
         // Foydalanuvchiga xulosa
         sendMarkdownText(chatId,
                 "🎉 *Barcha ma'lumotlar qabul qilindi!*\n\n"
+                        + "📱 Telefon: `" + userData.getPhone() + "`\n"
                         + "📄 Pasport: `" + userData.getPassportSeriya() + "`\n"
                         + "🔢 JSHSHR: `" + userData.getJshshr() + "`\n"
                         + "📸 Oldi tomoni: ✅\n"
@@ -212,9 +282,10 @@ public class MyBot extends TelegramLongPollingBot {
                         + "Tez orada siz bilan bog'lanamiz. Rahmat! 🙏",
                 removeKeyboard());
 
-        // Admin ga ma'lumotlar + tugma yuborish
+        // Admin ga ma'lumotlar + tugma
         String adminMsg = "📥 *Yangi foydalanuvchi!*\n\n"
                 + "👤 Chat ID: `" + chatId + "`\n"
+                + "📱 Telefon: `" + userData.getPhone() + "`\n"
                 + "📄 Pasport: `" + userData.getPassportSeriya() + "`\n"
                 + "🔢 JSHSHR: `" + userData.getJshshr() + "`";
 
@@ -286,8 +357,7 @@ public class MyBot extends TelegramLongPollingBot {
                 logger.severe(e.getMessage());
             }
 
-            sendText(adminId,   "👤 User ID: `" + targetUserId + "`\n"+
-                    "📤 Endi shartnoma faylini yuboring (PDF yoki Word):" );
+            sendText(adminId, "📤 Endi shartnoma faylini yuboring (PDF yoki Word):");
         }
     }
 

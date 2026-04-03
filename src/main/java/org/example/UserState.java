@@ -1,13 +1,11 @@
 package org.example;
 
-/**
- * Foydalanuvchining joriy holati (qaysi bosqichda ekanligi)
- */
 public enum UserState {
     START,
-    WAITING_PASSPORT,
-    WAITING_JSHSHR,
-    WAITING_PHOTO_FRONT,  // ← oldi tomoni
-    WAITING_PHOTO_BACK,   // ← orqa tomoni
+    WAITING_PHONE,        // 1-qadam: Telefon raqam
+    WAITING_PASSPORT,     // 2-qadam: Pasport seriya
+    WAITING_JSHSHR,       // 3-qadam: JSHSHR
+    WAITING_PHOTO_FRONT,  // 4-qadam: Oldi rasmi
+    WAITING_PHOTO_BACK,   // 5-qadam: Orqa rasmi
     COMPLETED
 }

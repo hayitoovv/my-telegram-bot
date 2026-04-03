@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserData {
-
+    private String phone;
     private String passportSeriya;
     private String jshshr;
     private String photoFrontFileId;  // oldi
